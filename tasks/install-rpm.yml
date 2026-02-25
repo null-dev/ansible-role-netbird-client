@@ -8,9 +8,11 @@
     gpgcheck: false
     repo_gpgcheck: true
     gpgkey: https://pkgs.netbird.io/yum/repodata/repomd.xml.key
+  become: true
 
 - name: Install Netbird
   ansible.builtin.yum:
     name: netbird
     state: present
   notify: restart netbird
+  become: true

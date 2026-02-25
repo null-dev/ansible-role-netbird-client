@@ -5,51 +5,60 @@
     state: stopped
     enabled: false
   ignore_errors: true
+  become: true
 
 - name: Remove Netbird package (Debian)
   ansible.builtin.apt:
     name: netbird
     state: absent
   when: netbird_install_method == 'deb'
+  become: true
 
 - name: Remove Netbird repository (Debian)
   ansible.builtin.apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/netbird-archive-keyring.gpg] https://pkgs.netbird.io/debian stable main"
     state: absent
   when: netbird_install_method == 'deb'
+  become: true
 
 - name: Remove Netbird GPG key (Debian)
   ansible.builtin.file:
     path: /usr/share/keyrings/netbird-archive-keyring.gpg
     state: absent
   when: netbird_install_method == 'deb'
+  become: true
 
 - name: Remove Netbird package (RedHat)
   ansible.builtin.yum:
     name: netbird
     state: absent
   when: netbird_install_method == 'rpm'
+  become: true
 
 - name: Remove Netbird repository (RedHat)
   ansible.builtin.yum_repository:
     name: netbird
     state: absent
   when: netbird_install_method == 'rpm'
+  become: true
 
 - name: Remove Netbird package (Arch)
   community.general.pacman:
     name: netbird
     state: absent
   when: netbird_install_method == 'pacman'
+  become: true
 
 - name: Uninstall Netbird service (Binary)
   ansible.builtin.command:
     cmd: "{{ netbird_binary_install_dir }}/netbird service uninstall"
   ignore_errors: true
   when: netbird_install_method == 'binary'
+  become: true
 
 - name: Remove Netbird binary (Binary)
   ansible.builtin.file:
     path: "{{ netbird_binary_install_dir }}/netbird"
     state: absent
   when: netbird_install_method == 'binary'
+  become: true

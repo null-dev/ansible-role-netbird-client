@@ -7,17 +7,20 @@
       - gnupg
     state: present
     update_cache: true
+  become: true
 
 - name: Add Netbird GPG key
   ansible.builtin.get_url:
     url: https://pkgs.netbird.io/debian/public.key
     dest: /usr/share/keyrings/netbird-archive-keyring.asc
     mode: '0644'
+  become: true
 
 - name: Dearmor Netbird GPG key
   ansible.builtin.command:
     cmd: gpg --dearmor -o /usr/share/keyrings/netbird-archive-keyring.gpg /usr/share/keyrings/netbird-archive-keyring.asc
     creates: /usr/share/keyrings/netbird-archive-keyring.gpg
+  become: true
 
 - name: Add Netbird repository
   ansible.builtin.apt_repository:
@@ -25,9 +28,11 @@
     filename: netbird
     state: present
     update_cache: true
+  become: true
 
 - name: Install Netbird
   ansible.builtin.apt:
     name: netbird
     state: present
   notify: restart netbird
+  become: true

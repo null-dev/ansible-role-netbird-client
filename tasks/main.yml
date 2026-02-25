@@ -14,3 +14,4 @@
         name: "{{ netbird_service_name }}"
         state: started
         enabled: true
+      become: true

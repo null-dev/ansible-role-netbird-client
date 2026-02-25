@@ -21,17 +21,20 @@
     group: root
     remote_src: true
   notify: restart netbird
+  become: true
 
 - name: Install Netbird service
   ansible.builtin.command:
     cmd: "{{ netbird_binary_install_dir }}/netbird service install"
     creates: /etc/systemd/system/netbird.service
+  become: true
 
 - name: Start Netbird service
   ansible.builtin.service:
     name: netbird
     state: started
     enabled: true
+  become: true
 
 - name: Cleanup temporary directory
   ansible.builtin.file:

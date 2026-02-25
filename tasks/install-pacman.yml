@@ -13,6 +13,7 @@
     name: netbird-builder
     create_home: true
     shell: /bin/bash
+  become: true
 
 - name: Clone Netbird AUR repository
   ansible.builtin.git:
@@ -35,6 +36,7 @@
     paths: /home/netbird-builder/netbird
     patterns: "*.pkg.tar.zst"
   register: built_package
+  become: true
 
 - name: Install Netbird package
   community.general.pacman:
@@ -48,3 +50,4 @@
     name: netbird-builder
     state: absent
     remove: true
+  become: true

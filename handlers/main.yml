@@ -4,7 +4,9 @@
     name: "{{ netbird_service_name }}"
     state: restarted
     enabled: true
+  become: true
 
 - name: systemd daemon-reload
   ansible.builtin.systemd:
     daemon_reload: true
+  become: true
