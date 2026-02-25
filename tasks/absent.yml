@@ -1,9 +1,19 @@
 ---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
 - name: Stop and disable Netbird service
   ansible.builtin.service:
     name: "{{ netbird_service_name }}"
     state: stopped
     enabled: false
+  ignore_errors: true
+  become: true
+
+- name: Kill Netbird process
+  ansible.builtin.command: pkill netbird
   ignore_errors: true
   become: true
 
@@ -56,9 +66,21 @@
   when: netbird_install_method == 'binary'
   become: true
 
+- name: Remove Netbird service file (Binary)
+  ansible.builtin.file:
+    path: /etc/systemd/system/netbird.service
+    state: absent
+  when: netbird_install_method == 'binary'
+  become: true
+
 - name: Remove Netbird binary (Binary)
   ansible.builtin.file:
     path: "{{ netbird_binary_install_dir }}/netbird"
     state: absent
   when: netbird_install_method == 'binary'
+  become: true
+
+- name: Final kill of Netbird process
+  ansible.builtin.command: pkill netbird
+  ignore_errors: true
   become: true

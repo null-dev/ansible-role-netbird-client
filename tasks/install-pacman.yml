@@ -3,6 +3,7 @@
   community.general.pacman:
     name:
       - base-devel
+      - ca-certificates
       - git
       - go
     state: present
@@ -22,6 +23,8 @@
     update: true
   become: true
   become_user: netbird-builder
+  environment:
+    GIT_SSL_NO_VERIFY: "true"
 
 - name: Build Netbird package
   ansible.builtin.command:
