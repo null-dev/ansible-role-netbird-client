@@ -1,7 +1,16 @@
 ---
-- name: Install OpenTelemetry Collector Contrib .rpm package
-  ansible.builtin.dnf:
-    name: "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v{{ otel_collector_contrib_version }}/otelcol-contrib_{{ otel_collector_contrib_version }}_linux_{{ otel_collector_contrib_arch }}.rpm"
+- name: Add Netbird repository
+  ansible.builtin.yum_repository:
+    name: netbird
+    description: Netbird
+    baseurl: https://pkgs.netbird.io/yum/
+    enabled: true
+    gpgcheck: false
+    repo_gpgcheck: true
+    gpgkey: https://pkgs.netbird.io/yum/repodata/repomd.xml.key
+
+- name: Install Netbird
+  ansible.builtin.yum:
+    name: netbird
     state: present
-    disable_gpg_check: true
-  notify: restart otelcol-contrib
+  notify: restart netbird

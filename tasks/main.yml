@@ -1,19 +1,16 @@
 ---
 - name: Handle absent state
   ansible.builtin.include_tasks: absent.yml
-  when: otel_collector_contrib_state == 'absent'
+  when: netbird_state == 'absent'
 
-- name: Perform installation and configuration
-  when: otel_collector_contrib_state == 'present'
+- name: Perform installation
+  when: netbird_state == 'present'
   block:
     - name: Include OS-specific installation tasks
-      ansible.builtin.include_tasks: "install-{{ otel_collector_contrib_install_method }}.yml"
+      ansible.builtin.include_tasks: "install-{{ netbird_install_method }}.yml"
 
-    - name: Configure OpenTelemetry Collector
-      ansible.builtin.include_tasks: configure.yml
-
-    - name: Ensure OpenTelemetry Collector service is running
+    - name: Ensure Netbird service is running
       ansible.builtin.service:
-        name: "{{ otel_collector_contrib_service_name }}"
+        name: "{{ netbird_service_name }}"
         state: started
         enabled: true

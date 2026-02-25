@@ -1,7 +1,7 @@
 ---
-- name: restart otelcol-contrib
+- name: restart netbird
   ansible.builtin.service:
-    name: "{{ otel_collector_contrib_service_name }}"
+    name: "{{ netbird_service_name }}"
     state: restarted
     enabled: true
 

@@ -1,95 +1,50 @@
 ---
-- name: Set binary install directory for Arch
-  ansible.builtin.set_fact:
-    otel_collector_contrib_binary_install_dir: "/usr/bin"
-    otel_collector_contrib_build_dir: "/tmp/otelcol-contrib_build"
-
-- name: Install base-devel
+- name: Install dependencies
   community.general.pacman:
-    name: base-devel
+    name:
+      - base-devel
+      - git
+      - go
     state: present
   become: true
 
-- name: Check if otelcol-contrib is installed
-  ansible.builtin.command: pacman -Q otelcol-contrib
-  register: pacman_query
-  ignore_errors: true
-  changed_when: false
-  become: false
+- name: Create build user
+  ansible.builtin.user:
+    name: netbird-builder
+    create_home: true
+    shell: /bin/bash
 
-- name: Determine if build is needed
-  ansible.builtin.set_fact:
-    build_needed: >-
-      {{
-        pacman_query.rc != 0 or
-        pacman_query.stdout.split()[1] != otel_collector_contrib_version ~ '-1'
-      }}
+- name: Clone Netbird AUR repository
+  ansible.builtin.git:
+    repo: https://aur.archlinux.org/netbird.git
+    dest: /home/netbird-builder/netbird
+    update: true
+  become: true
+  become_user: netbird-builder
 
-- name: Create build directory
-  ansible.builtin.file:
-    path: "{{ otel_collector_contrib_build_dir }}"
-    state: directory
-    mode: '0755'
-  become: false
-  when: build_needed
-
-- name: Copy PKGBUILD
-  ansible.builtin.template:
-    src: PKGBUILD.j2
-    dest: "{{ otel_collector_contrib_build_dir }}/PKGBUILD"
-    mode: '0644'
-  become: false
-  when: build_needed
-
-- name: Copy sysusers configuration
-  ansible.builtin.template:
-    src: sysusers.conf.j2
-    dest: "{{ otel_collector_contrib_build_dir }}/sysusers.conf"
-    mode: '0644'
-  become: false
-  when: build_needed
-
-- name: Copy systemd service file
-  ansible.builtin.template:
-    src: otelcol-contrib.service.j2
-    dest: "{{ otel_collector_contrib_build_dir }}/{{ otel_collector_contrib_service_name }}.service"
-    mode: '0644'
-  become: false
-  when: build_needed
-
-- name: Build package with makepkg
+- name: Build Netbird package
   ansible.builtin.command:
-    cmd: makepkg -s --noconfirm
-    chdir: "{{ otel_collector_contrib_build_dir }}"
-  become: false
+    cmd: makepkg -f --noconfirm
+    chdir: /home/netbird-builder/netbird
+  become: true
+  become_user: netbird-builder
   changed_when: true
-  when: build_needed
 
 - name: Find built package
   ansible.builtin.find:
-    paths: "{{ otel_collector_contrib_build_dir }}"
-    patterns: "otelcol-contrib-*.pkg.tar.zst"
+    paths: /home/netbird-builder/netbird
+    patterns: "*.pkg.tar.zst"
   register: built_package
-  become: false
-  when: build_needed
 
-- name: Assert two packages found (main and debug)
-  ansible.builtin.assert:
-    that: built_package.matched == 2
-    fail_msg: "Expected 2 packages (main and debug), found {{ built_package.matched }}"
-  when: build_needed
-
-- name: Install built packages
-  ansible.builtin.command:
-    cmd: "pacman -U --noconfirm {{ built_package.files | map(attribute='path') | join(' ') }}"
+- name: Install Netbird package
+  community.general.pacman:
+    name: "{{ built_package.files[0].path }}"
+    state: present
   become: true
-  changed_when: true
-  when: build_needed
-  notify: restart otelcol-contrib
+  notify: restart netbird
 
-- name: Cleanup build directory
-  ansible.builtin.file:
-    path: "{{ otel_collector_contrib_build_dir }}"
+- name: Remove build user
+  ansible.builtin.user:
+    name: netbird-builder
     state: absent
-  become: true
-  when: build_needed
+    remove: true

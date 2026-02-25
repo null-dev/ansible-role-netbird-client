@@ -1,9 +1,9 @@
 ---
 galaxy_info:
-  role_name: otel_collector_contrib
+  role_name: netbird
   namespace: null_dev
   author: null-dev
-  description: Installs and configures the OpenTelemetry Collector Contrib distribution.
+  description: Installs the Netbird VPN client.
   company: N/A
   license: MIT
   min_ansible_version: "2.9"
@@ -24,10 +24,9 @@ galaxy_info:
       versions:
         - all
   galaxy_tags:
-    - monitoring
-    - observability
-    - opentelemetry
-    - otel
-    - collector
+    - vpn
+    - netbird
+    - networking
+    - security
 
 dependencies: []
