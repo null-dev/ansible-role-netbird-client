@@ -11,3 +11,15 @@
       delay: 1
       failed_when: pgrep_result.rc == 0
       changed_when: false
+
+    - name: Debug processes if verification failed
+      ansible.builtin.command: ps -aux
+      register: ps_output
+      when: pgrep_result.rc == 0
+      changed_when: false
+      ignore_errors: true
+
+    - name: Print process list if verification failed
+      ansible.builtin.debug:
+        var: ps_output.stdout_lines
+      when: pgrep_result.rc == 0
