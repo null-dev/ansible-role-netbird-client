@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: netbird-client
+  role_name: netbird_client
   namespace: null_dev
   author: null-dev
   description: Installs the Netbird VPN client.

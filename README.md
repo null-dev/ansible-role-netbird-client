@@ -1,4 +1,4 @@
-# Ansible Role: netbird-client
+# Ansible Role: netbird_client
 
 Installs and configures the Netbird VPN client.
 
