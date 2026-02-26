@@ -10,7 +10,6 @@
       - base-devel
       - ca-certificates
       - git
-      - go
     state: present
   become: true
 
@@ -52,15 +51,14 @@
   register: built_packages
   become: false
 
+- name: Assert two packages found (main and debug)
+  ansible.builtin.assert:
+    that: built_packages.matched == 2
+    fail_msg: "Expected 2 packages (main and debug), found {{ built_packages.matched }}"
+
 - name: Install Netbird packages
   community.general.pacman:
     name: "{{ built_packages.files | map(attribute='path') | list }}"
     state: present
   become: true
   notify: restart netbird
-
-- name: Cleanup build directory
-  ansible.builtin.file:
-    path: "{{ netbird_build_dir }}"
-    state: absent
-  become: true
