@@ -14,6 +14,8 @@ Available variables are listed below, along with default values (see `defaults/m
 
 The version of Netbird to install (e.g., `"0.66.0"`). This is primarily used for binary installation, but can be informative for other methods.
 
+**Note:** When `netbird_install_method == "pacman"` this variable must be set to the special value: `"latest"`.
+
 ### `netbird_state`
 
 Controls whether the Netbird client is installed or uninstalled.
@@ -24,10 +26,11 @@ Default: `"present"`
 ### `netbird_install_method`
 
 The installation method is automatically detected based on the distribution.
-- `deb`: For Debian/Ubuntu based systems.
-- `rpm`: For RHEL/CentOS/Fedora based systems.
-- `pacman`: For Arch Linux based systems.
-- `binary`: For other Linux systems.
+- `deb`: For Debian/Ubuntu based systems: Installs netbird from the netbird APT repo.
+- `rpm`: For RHEL/CentOS/Fedora based systems: Installs netbird from the netbird YUM repo.
+- `pacman`: For Arch Linux based systems: Installs the [netbird-bin](https://aur.archlinux.org/packages/netbird-bin) package from the AUR.
+  - Note: The only supported value of the [`netbird_version`] var for this installation method is the special value: `"latest"`. Installing a specific version of netbird is not supported by this method.
+- `binary`: For other Linux systems: Directly installs the netbird binary.
 
 ### `netbird_arch`
 
