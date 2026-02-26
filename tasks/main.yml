@@ -1,10 +1,29 @@
 ---
+- name: Validate configuration (Binary - Present)
+  ansible.builtin.assert:
+    that:
+      - netbird_version is defined
+      - netbird_version | length > 0
+    fail_msg: "netbird_version must be set when using binary installation method with state 'present'."
+  when:
+    - netbird_install_method == 'binary'
+    - netbird_state == 'present'
+
+- name: Validate configuration (Package Manager)
+  ansible.builtin.assert:
+    that:
+      - netbird_version is not defined or netbird_version | length == 0
+    fail_msg: "netbird_version should not be set when using package manager installation ({{ netbird_install_method }})."
+  when:
+    - netbird_install_method != 'binary'
+    - netbird_state in ['present', 'latest']
+
 - name: Handle absent state
   ansible.builtin.include_tasks: absent.yml
   when: netbird_state == 'absent'
 
 - name: Perform installation
-  when: netbird_state == 'present'
+  when: netbird_state in ['present', 'latest']
   block:
     - name: Include OS-specific installation tasks
       ansible.builtin.include_tasks: "install-{{ netbird_install_method }}.yml"

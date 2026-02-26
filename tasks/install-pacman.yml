@@ -1,9 +1,4 @@
 ---
-- name: Assert netbird_version is latest on Arch
-  ansible.builtin.assert:
-    that: netbird_version == 'latest'
-    fail_msg: "On Arch Linux, netbird_version must be set to 'latest'."
-
 - name: Install dependencies
   community.general.pacman:
     name:
@@ -12,6 +7,17 @@
       - git
     state: present
   become: true
+
+- name: Check if Netbird is installed
+  ansible.builtin.command: pacman -Q netbird
+  register: pacman_check
+  failed_when: false
+  changed_when: false
+
+- name: Get installed version
+  ansible.builtin.set_fact:
+    netbird_installed_version: "{{ pacman_check.stdout.split(' ')[1] }}"
+  when: pacman_check.rc == 0
 
 - name: Set build directory
   ansible.builtin.set_fact:
@@ -25,6 +31,9 @@
     owner: "{{ ansible_facts['user_id'] }}"
     group: "{{ ansible_facts['user_id'] }}"
   become: true
+  when: >
+    pacman_check.rc != 0 or
+    netbird_state == 'latest'
 
 - name: Clone Netbird AUR repository
   ansible.builtin.git:
@@ -32,11 +41,40 @@
     dest: "{{ netbird_build_dir }}/netbird-bin"
     version: netbird-bin
     single_branch: true
-    update: true
+    update: "{{ netbird_state == 'latest' }}"
   become: false
   environment:
     GIT_SSL_NO_VERIFY: "true"
   register: aur_git_clone
+  when: >
+    pacman_check.rc != 0 or
+    netbird_state == 'latest'
+
+- name: Get AUR version info
+  ansible.builtin.shell:
+    cmd: makepkg --printsrcinfo
+    chdir: "{{ netbird_build_dir }}/netbird-bin"
+  register: aur_srcinfo
+  changed_when: false
+  when: aur_git_clone is not skipped
+
+- name: Parse AUR version
+  ansible.builtin.set_fact:
+    netbird_aur_version: >-
+      {{
+        (aur_srcinfo.stdout_lines | select('match', '^\t*pkgver = ') | first | regex_replace('.* = ', '')) ~ '-' ~
+        (aur_srcinfo.stdout_lines | select('match', '^\t*pkgrel = ') | first | regex_replace('.* = ', ''))
+      }}
+  when: aur_git_clone is not skipped
+
+- name: Determine if build needed
+  ansible.builtin.set_fact:
+    netbird_build_needed: >-
+      {{
+        pacman_check.rc != 0 or
+        (netbird_state == 'latest' and netbird_installed_version != netbird_aur_version)
+      }}
+  when: aur_git_clone is not skipped
 
 - name: Build Netbird package
   ansible.builtin.command:
@@ -44,7 +82,7 @@
     chdir: "{{ netbird_build_dir }}/netbird-bin"
   become: false
   changed_when: true
-  when: aur_git_clone.changed
+  when: netbird_build_needed | default(false)
 
 - name: Find built packages
   ansible.builtin.find:
@@ -52,15 +90,18 @@
     patterns: "*.pkg.tar.zst"
   register: built_packages
   become: false
+  when: netbird_build_needed | default(false)
 
-- name: Assert two packages found (main and debug)
+- name: Assert package found
   ansible.builtin.assert:
-    that: built_packages.matched == 2
-    fail_msg: "Expected 2 packages (main and debug), found {{ built_packages.matched }}"
+    that: built_packages.matched >= 1
+    fail_msg: "Expected at least 1 package, found {{ built_packages.matched }}"
+  when: netbird_build_needed | default(false)
 
 - name: Install Netbird packages
   community.general.pacman:
     name: "{{ built_packages.files | map(attribute='path') | list }}"
-    state: present
+    state: upgrade
   become: true
   notify: restart netbird
+  when: netbird_build_needed | default(false)

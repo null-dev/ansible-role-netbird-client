@@ -19,16 +19,20 @@
     signed_by: https://pkgs.netbird.io/debian/public.key
     state: present
     install_python_debian: true
+  register: netbird_repo_added
   become: true
 
-- name: Update apt cache
+- name: Update apt cache (netbird)
   ansible.builtin.apt:
     update_cache: true
   become: true
+  when: >
+    netbird_state == 'latest' or
+    netbird_repo_added.changed
 
 - name: Install Netbird
   ansible.builtin.apt:
     name: netbird
-    state: present
+    state: "{{ netbird_state }}"
   notify: restart netbird
   become: true

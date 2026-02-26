@@ -1,4 +1,17 @@
 ---
+- name: Get latest Netbird release from GitHub
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/netbirdio/netbird/releases/latest
+    return_content: true
+  register: github_latest_release
+  check_mode: false
+  when: netbird_state == 'latest'
+
+- name: Set netbird_version to latest
+  ansible.builtin.set_fact:
+    netbird_version: "{{ github_latest_release.json.tag_name | regex_replace('^v', '') }}"
+  when: netbird_state == 'latest'
+
 - name: Check if Netbird binary exists
   ansible.builtin.stat:
     path: "{{ netbird_binary_install_dir }}/netbird"

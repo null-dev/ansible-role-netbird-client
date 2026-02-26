@@ -13,6 +13,7 @@
 - name: Install Netbird
   ansible.builtin.yum:
     name: netbird
-    state: present
+    state: "{{ netbird_state }}"
+    update_cache: "{{ netbird_state == 'latest' }}"
   notify: restart netbird
   become: true
