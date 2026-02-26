@@ -9,8 +9,8 @@
       until: pgrep_result.rc != 0
       retries: 15
       delay: 1
-      failed_when: pgrep_result.rc == 0
       changed_when: false
+      ignore_errors: true
 
     - name: Debug processes if verification failed
       ansible.builtin.command: ps -aux
@@ -22,4 +22,9 @@
     - name: Print process list if verification failed
       ansible.builtin.debug:
         var: ps_output.stdout_lines
+      when: pgrep_result.rc == 0
+
+    - name: Fail if netbird process is still running
+      ansible.builtin.fail:
+        msg: "Netbird process is still running after 15 seconds."
       when: pgrep_result.rc == 0
