@@ -20,22 +20,8 @@
   become: true
 
 - name: Remove Netbird repository (Debian)
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/netbird-archive-keyring.gpg] https://pkgs.netbird.io/debian stable main"
-    state: absent
-  when: netbird_install_method == 'deb'
-  become: true
-
-- name: Remove Netbird GPG key (Debian)
-  ansible.builtin.file:
-    path: /usr/share/keyrings/netbird-archive-keyring.gpg
-    state: absent
-  when: netbird_install_method == 'deb'
-  become: true
-
-- name: Remove Netbird ASC key (Debian)
-  ansible.builtin.file:
-    path: /usr/share/keyrings/netbird-archive-keyring.asc
+  ansible.builtin.deb822_repository:
+    name: netbird
     state: absent
   when: netbird_install_method == 'deb'
   become: true
