@@ -1,95 +1,66 @@
 ---
-- name: Set binary install directory for Arch
-  ansible.builtin.set_fact:
-    otel_collector_contrib_binary_install_dir: "/usr/bin"
-    otel_collector_contrib_build_dir: "/tmp/otelcol-contrib_build"
+- name: Assert netbird_version is latest on Arch
+  ansible.builtin.assert:
+    that: netbird_version == 'latest'
+    fail_msg: "On Arch Linux, netbird_version must be set to 'latest'."
 
-- name: Install base-devel
+- name: Install dependencies
   community.general.pacman:
-    name: base-devel
+    name:
+      - base-devel
+      - ca-certificates
+      - git
     state: present
   become: true
 
-- name: Check if otelcol-contrib is installed
-  ansible.builtin.command: pacman -Q otelcol-contrib
-  register: pacman_query
-  ignore_errors: true
-  changed_when: false
-  become: false
-
-- name: Determine if build is needed
+- name: Set build directory
   ansible.builtin.set_fact:
-    build_needed: >-
-      {{
-        pacman_query.rc != 0 or
-        pacman_query.stdout.split()[1] != otel_collector_contrib_version ~ '-1'
-      }}
+    netbird_build_dir: "{{ ansible_env.HOME }}/ansible-persist/netbird-client/build"
 
 - name: Create build directory
   ansible.builtin.file:
-    path: "{{ otel_collector_contrib_build_dir }}"
+    path: "{{ netbird_build_dir }}"
     state: directory
     mode: '0755'
-  become: false
-  when: build_needed
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+  become: true
 
-- name: Copy PKGBUILD
-  ansible.builtin.template:
-    src: PKGBUILD.j2
-    dest: "{{ otel_collector_contrib_build_dir }}/PKGBUILD"
-    mode: '0644'
+- name: Clone Netbird AUR repository
+  ansible.builtin.git:
+    repo: https://github.com/archlinux/aur.git
+    dest: "{{ netbird_build_dir }}/netbird-bin"
+    version: netbird-bin
+    single_branch: true
+    update: true
   become: false
-  when: build_needed
+  environment:
+    GIT_SSL_NO_VERIFY: "true"
+  register: aur_git_clone
 
-- name: Copy sysusers configuration
-  ansible.builtin.template:
-    src: sysusers.conf.j2
-    dest: "{{ otel_collector_contrib_build_dir }}/sysusers.conf"
-    mode: '0644'
-  become: false
-  when: build_needed
-
-- name: Copy systemd service file
-  ansible.builtin.template:
-    src: otelcol-contrib.service.j2
-    dest: "{{ otel_collector_contrib_build_dir }}/{{ otel_collector_contrib_service_name }}.service"
-    mode: '0644'
-  become: false
-  when: build_needed
-
-- name: Build package with makepkg
+- name: Build Netbird package
   ansible.builtin.command:
-    cmd: makepkg -s --noconfirm
-    chdir: "{{ otel_collector_contrib_build_dir }}"
+    cmd: makepkg -f --clean --noconfirm
+    chdir: "{{ netbird_build_dir }}/netbird-bin"
   become: false
   changed_when: true
-  when: build_needed
+  when: aur_git_clone.changed
 
-- name: Find built package
+- name: Find built packages
   ansible.builtin.find:
-    paths: "{{ otel_collector_contrib_build_dir }}"
-    patterns: "otelcol-contrib-*.pkg.tar.zst"
-  register: built_package
+    paths: "{{ netbird_build_dir }}/netbird-bin"
+    patterns: "*.pkg.tar.zst"
+  register: built_packages
   become: false
-  when: build_needed
 
 - name: Assert two packages found (main and debug)
   ansible.builtin.assert:
-    that: built_package.matched == 2
-    fail_msg: "Expected 2 packages (main and debug), found {{ built_package.matched }}"
-  when: build_needed
+    that: built_packages.matched == 2
+    fail_msg: "Expected 2 packages (main and debug), found {{ built_packages.matched }}"
 
-- name: Install built packages
-  ansible.builtin.command:
-    cmd: "pacman -U --noconfirm {{ built_package.files | map(attribute='path') | join(' ') }}"
+- name: Install Netbird packages
+  community.general.pacman:
+    name: "{{ built_packages.files | map(attribute='path') | list }}"
+    state: present
   become: true
-  changed_when: true
-  when: build_needed
-  notify: restart otelcol-contrib
-
-- name: Cleanup build directory
-  ansible.builtin.file:
-    path: "{{ otel_collector_contrib_build_dir }}"
-    state: absent
-  become: true
-  when: build_needed
+  notify: restart netbird

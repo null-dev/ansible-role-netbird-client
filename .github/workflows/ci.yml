@@ -36,7 +36,7 @@ jobs:
       - name: Run Molecule tests
         run: >-
           molecule test --all
-          ${{ matrix.distro == 'debian12-binary' && '-- -e otel_collector_contrib_install_method=binary' || '' }}
+          ${{ matrix.distro == 'debian12-binary' && '-- -e netbird_install_method=binary' || '' }}
         env:
           MOLECULE_DISTRO: ${{ matrix.distro }}
           MOLECULE_IMAGE: >-

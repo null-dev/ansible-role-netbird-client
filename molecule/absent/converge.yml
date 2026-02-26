@@ -1,10 +1,9 @@
 ---
 - name: Converge
   hosts: all
-  become: true
   tasks:
-    - name: Include otel_collector_contrib
+    - name: Include netbird role (absent)
       ansible.builtin.include_role:
         name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
       vars:
-        otel_collector_contrib_state: absent
+        netbird_state: absent

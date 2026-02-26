@@ -1,45 +1,71 @@
 ---
-- name: Create otel group
-  ansible.builtin.group:
-    name: "{{ otel_collector_contrib_user }}"
-    system: true
-    state: present
+- name: Check if Netbird binary exists
+  ansible.builtin.stat:
+    path: "{{ netbird_binary_install_dir }}/netbird"
+  register: netbird_binary_stat
+  become: true
 
-- name: Create otel user
-  ansible.builtin.user:
-    name: "{{ otel_collector_contrib_user }}"
-    group: "{{ otel_collector_contrib_user }}"
-    system: true
-    shell: /sbin/nologin
-    create_home: false
-    state: present
+- name: Check installed Netbird version
+  ansible.builtin.command: "{{ netbird_binary_install_dir }}/netbird version"
+  register: netbird_installed_version_output
+  changed_when: false
+  ignore_errors: true
+  when: netbird_binary_stat.stat.exists
+  become: true
+
+- name: Determine if Netbird needs update
+  ansible.builtin.set_fact:
+    netbird_needs_update: >-
+      {{
+        not netbird_binary_stat.stat.exists or
+        (netbird_installed_version_output.stdout | default('') != netbird_version)
+      }}
 
 - name: Create temporary download directory
   ansible.builtin.file:
-    path: "/tmp/otel-install-{{ otel_collector_contrib_version }}"
+    path: /tmp/netbird-install
     state: directory
     mode: '0755'
+  when: netbird_needs_update
+  become: true
 
-- name: Download and unarchive OpenTelemetry Collector Contrib
+- name: Download and unarchive Netbird
   ansible.builtin.unarchive:
-    src: "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v{{ otel_collector_contrib_version }}/otelcol-contrib_{{ otel_collector_contrib_version }}_linux_{{ otel_collector_contrib_arch }}.tar.gz"
-    dest: "/tmp/otel-install-{{ otel_collector_contrib_version }}"
+    src: "https://github.com/netbirdio/netbird/releases/download/v{{ netbird_version }}/netbird_{{ netbird_version }}_linux_{{ netbird_arch }}.tar.gz"
+    dest: /tmp/netbird-install
     remote_src: true
-    creates: "/tmp/otel-install-{{ otel_collector_contrib_version }}/otelcol-contrib"
+  when: netbird_needs_update
+  become: true
 
-- name: Move binary to install directory
+- name: Install Netbird binary
   ansible.builtin.copy:
-    src: "/tmp/otel-install-{{ otel_collector_contrib_version }}/otelcol-contrib"
-    dest: "{{ otel_collector_contrib_binary_install_dir }}/{{ otel_collector_contrib_service_name }}"
+    src: /tmp/netbird-install/netbird
+    dest: "{{ netbird_binary_install_dir }}/netbird"
     mode: '0755'
-    owner: "{{ otel_collector_contrib_user }}"
-    group: "{{ otel_collector_contrib_user }}"
+    owner: root
+    group: root
     remote_src: true
-  notify: restart otelcol-contrib
+  notify: restart netbird
+  when: netbird_needs_update
+  become: true
 
-- name: Install Systemd Service
-  ansible.builtin.template:
-    src: otelcol-contrib.service.j2
-    dest: /etc/systemd/system/{{ otel_collector_contrib_service_name }}.service
-    mode: '0644'
-  notify: restart otelcol-contrib
+- name: Install Netbird service
+  ansible.builtin.command:
+    cmd: "{{ netbird_binary_install_dir }}/netbird service install"
+    creates: /etc/systemd/system/netbird.service
+  when: netbird_needs_update
+  become: true
+
+- name: Start Netbird service
+  ansible.builtin.service:
+    name: netbird
+    state: started
+    enabled: true
+  become: true
+
+- name: Cleanup temporary directory
+  ansible.builtin.file:
+    path: /tmp/netbird-install
+    state: absent
+  when: netbird_needs_update
+  become: true

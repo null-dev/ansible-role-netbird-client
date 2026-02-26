@@ -1,45 +1,90 @@
 ---
-- name: Stop and disable OpenTelemetry Collector service
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Stop and disable Netbird service
   ansible.builtin.service:
-    name: "{{ otel_collector_contrib_service_name }}"
+    name: "{{ netbird_service_name }}"
     state: stopped
     enabled: false
   ignore_errors: true
+  become: true
 
-- name: Remove OpenTelemetry Collector package (Debian)
+- name: Kill Netbird process
+  ansible.builtin.command: pkill netbird
+  register: pkill_result
+  changed_when: pkill_result.rc == 0
+  failed_when: pkill_result.rc != 0 and pkill_result.rc != 1
+  become: true
+
+- name: Remove Netbird package (Debian)
   ansible.builtin.apt:
-    name: otelcol-contrib
+    name: netbird
     state: absent
-  when: otel_collector_contrib_install_method == 'deb'
+  when: netbird_install_method == 'deb'
+  become: true
 
-- name: Remove OpenTelemetry Collector package (RedHat)
-  ansible.builtin.dnf:
-    name: otelcol-contrib
+- name: Remove Netbird repository (Debian)
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/netbird-archive-keyring.gpg] https://pkgs.netbird.io/debian stable main"
     state: absent
-  when: otel_collector_contrib_install_method == 'rpm'
+  when: netbird_install_method == 'deb'
+  become: true
 
-- name: Remove OpenTelemetry Collector packages (Arch)
+- name: Remove Netbird GPG key (Debian)
+  ansible.builtin.file:
+    path: /usr/share/keyrings/netbird-archive-keyring.gpg
+    state: absent
+  when: netbird_install_method == 'deb'
+  become: true
+
+- name: Remove Netbird package (RedHat)
+  ansible.builtin.yum:
+    name: netbird
+    state: absent
+  when: netbird_install_method == 'rpm'
+  become: true
+
+- name: Remove Netbird repository (RedHat)
+  ansible.builtin.yum_repository:
+    name: netbird
+    state: absent
+  when: netbird_install_method == 'rpm'
+  become: true
+
+- name: Remove Netbird package (Arch)
   community.general.pacman:
-    name:
-      - otelcol-contrib
-      - otelcol-contrib-debug
+    name: netbird
     state: absent
-  when: otel_collector_contrib_install_method == 'pacman'
+  when: netbird_install_method == 'pacman'
+  become: true
 
-- name: Remove OpenTelemetry Collector binary (binary)
-  ansible.builtin.file:
-    path: "{{ otel_collector_contrib_binary_install_dir }}/{{ otel_collector_contrib_service_name }}"
-    state: absent
-  when: otel_collector_contrib_install_method == 'binary'
+- name: Uninstall Netbird service (Binary)
+  ansible.builtin.command:
+    cmd: "{{ netbird_binary_install_dir }}/netbird service uninstall"
+  ignore_errors: true
+  when: netbird_install_method == 'binary'
+  become: true
 
-- name: Remove systemd service file (binary)
+- name: Remove Netbird service file (Binary)
   ansible.builtin.file:
-    path: /etc/systemd/system/{{ otel_collector_contrib_service_name }}.service
+    path: /etc/systemd/system/netbird.service
     state: absent
-  notify: systemd daemon-reload
-  when: otel_collector_contrib_install_method == 'binary'
+  when: netbird_install_method == 'binary'
+  become: true
 
-- name: Remove OpenTelemetry Collector configuration directory
+- name: Remove Netbird binary (Binary)
   ansible.builtin.file:
-    path: /etc/otelcol-contrib
+    path: "{{ netbird_binary_install_dir }}/netbird"
     state: absent
+  when: netbird_install_method == 'binary'
+  become: true
+
+- name: Final kill of Netbird process
+  ansible.builtin.command: pkill netbird
+  register: pkill_final_result
+  changed_when: pkill_final_result.rc == 0
+  failed_when: pkill_final_result.rc != 0 and pkill_final_result.rc != 1
+  become: true
