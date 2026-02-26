@@ -4,30 +4,25 @@
     name:
       - ca-certificates
       - curl
-      - gnupg
       - procps
     state: present
     update_cache: true
   become: true
 
-- name: Add Netbird GPG key
-  ansible.builtin.get_url:
-    url: https://pkgs.netbird.io/debian/public.key
-    dest: /usr/share/keyrings/netbird-archive-keyring.asc
-    mode: "0644"
-  become: true
-
-- name: Dearmor Netbird GPG key
-  ansible.builtin.command:
-    cmd: gpg --dearmor -o /usr/share/keyrings/netbird-archive-keyring.gpg /usr/share/keyrings/netbird-archive-keyring.asc
-    creates: /usr/share/keyrings/netbird-archive-keyring.gpg
-  become: true
-
 - name: Add Netbird repository
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/netbird-archive-keyring.gpg] https://pkgs.netbird.io/debian stable main"
-    filename: netbird
+  ansible.builtin.deb822_repository:
+    name: netbird
+    types: deb
+    uris: https://pkgs.netbird.io/debian
+    suites: stable
+    components: main
+    signed_by: https://pkgs.netbird.io/debian/public.key
     state: present
+    install_python_debian: true
+  become: true
+
+- name: Update apt cache
+  ansible.builtin.apt:
     update_cache: true
   become: true
 
