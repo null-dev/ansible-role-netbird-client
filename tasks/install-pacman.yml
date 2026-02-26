@@ -1,4 +1,9 @@
 ---
+- name: Assert netbird_version is latest on Arch
+  ansible.builtin.assert:
+    that: netbird_version == 'latest'
+    fail_msg: "On Arch Linux, netbird_version must be set to 'latest'."
+
 - name: Install dependencies
   community.general.pacman:
     name:
@@ -11,7 +16,7 @@
 
 - name: Set build directory
   ansible.builtin.set_fact:
-    netbird_build_dir: "/tmp/netbird-build"
+    netbird_build_dir: "{{ ansible_env.HOME }}/ansible-persist/netbird-client/build"
 
 - name: Create build directory
   ansible.builtin.file:
@@ -23,10 +28,11 @@
   become: true
 
 - name: Clone Netbird AUR repository
-  ansible.builtin.command:
-    cmd: git clone --branch netbird-bin --single-branch https://github.com/archlinux/aur.git netbird-bin
-    chdir: "{{ netbird_build_dir }}"
-    creates: "{{ netbird_build_dir }}/netbird-bin"
+  ansible.builtin.git:
+    repo: https://github.com/archlinux/aur.git
+    dest: "{{ netbird_build_dir }}/netbird-bin"
+    version: netbird-bin
+    update: true
   become: false
   environment:
     GIT_SSL_NO_VERIFY: "true"

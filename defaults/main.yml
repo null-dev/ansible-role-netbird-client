@@ -1,5 +1,5 @@
 ---
-netbird_version: "0.66.0"
+netbird_version: "{{ 'latest' if ansible_facts['os_family'] == 'Archlinux' else '0.66.0' }}"
 netbird_state: "present"
 
 # Architecture mapping
