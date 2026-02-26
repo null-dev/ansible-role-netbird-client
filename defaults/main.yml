@@ -1,0 +1,31 @@
+---
+netbird_version: "{{ 'latest' if ansible_facts['os_family'] == 'Archlinux' else '0.66.0' }}"
+netbird_state: "present"
+
+# Architecture mapping
+netbird_arch: >-
+  {{
+    'amd64' if ansible_facts['architecture'] == 'x86_64' else
+    'arm64' if ansible_facts['architecture'] == 'aarch64' else
+    '386' if ansible_facts['architecture'] in ['i386', 'i686'] else
+    ansible_facts['architecture']
+  }}
+
+# Installation method
+netbird_install_method: >-
+  {{
+    'deb' if ansible_facts['os_family'] == 'Debian' else
+    'rpm' if ansible_facts['os_family'] == 'RedHat' else
+    'pacman' if ansible_facts['os_family'] == 'Archlinux' else
+    'binary'
+  }}
+
+# Binary installation (Arch/Other)
+netbird_binary_install_dir: "/usr/bin"
+
+# Service name
+netbird_service_name: >-
+  {{
+    'netbird@main' if ansible_facts['os_family'] == 'Archlinux' else
+    'netbird'
+  }}

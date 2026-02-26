@@ -1,0 +1,66 @@
+---
+- name: Assert netbird_version is latest on Arch
+  ansible.builtin.assert:
+    that: netbird_version == 'latest'
+    fail_msg: "On Arch Linux, netbird_version must be set to 'latest'."
+
+- name: Install dependencies
+  community.general.pacman:
+    name:
+      - base-devel
+      - ca-certificates
+      - git
+    state: present
+  become: true
+
+- name: Set build directory
+  ansible.builtin.set_fact:
+    netbird_build_dir: "{{ ansible_facts['env']['HOME'] }}/ansible-persist/netbird-client/build"
+
+- name: Create build directory
+  ansible.builtin.file:
+    path: "{{ netbird_build_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
+  become: true
+
+- name: Clone Netbird AUR repository
+  ansible.builtin.git:
+    repo: https://github.com/archlinux/aur.git
+    dest: "{{ netbird_build_dir }}/netbird-bin"
+    version: netbird-bin
+    single_branch: true
+    update: true
+  become: false
+  environment:
+    GIT_SSL_NO_VERIFY: "true"
+  register: aur_git_clone
+
+- name: Build Netbird package
+  ansible.builtin.command:
+    cmd: makepkg -f --clean --noconfirm
+    chdir: "{{ netbird_build_dir }}/netbird-bin"
+  become: false
+  changed_when: true
+  when: aur_git_clone.changed
+
+- name: Find built packages
+  ansible.builtin.find:
+    paths: "{{ netbird_build_dir }}/netbird-bin"
+    patterns: "*.pkg.tar.zst"
+  register: built_packages
+  become: false
+
+- name: Assert two packages found (main and debug)
+  ansible.builtin.assert:
+    that: built_packages.matched == 2
+    fail_msg: "Expected 2 packages (main and debug), found {{ built_packages.matched }}"
+
+- name: Install Netbird packages
+  community.general.pacman:
+    name: "{{ built_packages.files | map(attribute='path') | list }}"
+    state: present
+  become: true
+  notify: restart netbird
