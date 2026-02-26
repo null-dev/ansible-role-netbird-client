@@ -21,6 +21,11 @@
     install_python_debian: true
   become: true
 
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+
 - name: Install Netbird
   ansible.builtin.apt:
     name: netbird
