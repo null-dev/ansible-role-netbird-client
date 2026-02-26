@@ -61,6 +61,12 @@
   when: netbird_install_method == 'pacman'
   become: true
 
+- name: Reload systemd (Arch)
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: netbird_install_method == 'pacman'
+  become: true
+
 - name: Uninstall Netbird service (Binary)
   ansible.builtin.command:
     cmd: "{{ netbird_binary_install_dir }}/netbird service uninstall"
