@@ -8,3 +8,4 @@
         name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
       vars:
         netbird_state: present
+        netbird_version: "{{ '0.66.0' if 'binary' in lookup('env', 'MOLECULE_DISTRO') else '' }}"

@@ -1,9 +1,4 @@
 ---
-- name: Assert netbird_version is latest on Arch
-  ansible.builtin.assert:
-    that: netbird_version == 'latest'
-    fail_msg: "On Arch Linux, netbird_version must be set to 'latest'."
-
 - name: Install dependencies
   community.general.pacman:
     name:
@@ -12,6 +7,13 @@
       - git
     state: present
   become: true
+
+- name: Check if Netbird is installed
+  ansible.builtin.command: pacman -Q netbird-bin
+  register: pacman_check
+  failed_when: false
+  changed_when: false
+  become: false
 
 - name: Set build directory
   ansible.builtin.set_fact:
@@ -37,6 +39,40 @@
   environment:
     GIT_SSL_NO_VERIFY: "true"
   register: aur_git_clone
+  when: netbird_state == 'latest' or pacman_check.rc != 0
+
+- name: Check installed version vs source version
+  block:
+    - name: Get source version
+      ansible.builtin.shell: |
+        source PKGBUILD
+        echo "$pkgver-$pkgrel"
+      args:
+        chdir: "{{ netbird_build_dir }}/netbird-bin"
+        executable: /bin/bash
+      register: src_info
+      changed_when: false
+      become: false
+
+    - name: Get installed version
+      ansible.builtin.command: pacman -Q netbird-bin
+      register: installed_pkg_info
+      changed_when: false
+      failed_when: false
+
+    - name: Set update needed flag
+      ansible.builtin.set_fact:
+        netbird_update_needed: "{{ installed_pkg_info.rc != 0 or installed_pkg_info.stdout.split(' ')[1] != src_info.stdout.strip() }}"
+  when:
+    - netbird_state == 'latest'
+
+- name: Determine if build is required
+  ansible.builtin.set_fact:
+    netbird_build_required: >-
+      {{
+        (netbird_state == 'present' and pacman_check.rc != 0) or
+        (netbird_state == 'latest' and netbird_update_needed | default(false))
+      }}
 
 - name: Build Netbird package
   ansible.builtin.command:
@@ -44,7 +80,7 @@
     chdir: "{{ netbird_build_dir }}/netbird-bin"
   become: false
   changed_when: true
-  when: aur_git_clone.changed
+  when: netbird_build_required
 
 - name: Find built packages
   ansible.builtin.find:
@@ -52,11 +88,13 @@
     patterns: "*.pkg.tar.zst"
   register: built_packages
   become: false
+  when: netbird_build_required
 
 - name: Assert two packages found (main and debug)
   ansible.builtin.assert:
     that: built_packages.matched == 2
     fail_msg: "Expected 2 packages (main and debug), found {{ built_packages.matched }}"
+  when: netbird_build_required
 
 - name: Install Netbird packages
   community.general.pacman:
@@ -64,3 +102,4 @@
     state: present
   become: true
   notify: restart netbird
+  when: netbird_build_required

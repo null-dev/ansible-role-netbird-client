@@ -1,0 +1,10 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check for netbird process
+      ansible.builtin.shell: pgrep -f netbird
+      register: pgrep_result
+      changed_when: false
+      failed_when: pgrep_result.rc != 0

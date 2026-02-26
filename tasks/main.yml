@@ -4,8 +4,25 @@
   when: netbird_state == 'absent'
 
 - name: Perform installation
-  when: netbird_state == 'present'
+  when: netbird_state in ['present', 'latest']
   block:
+    - name: Assertions for non-binary install methods
+      ansible.builtin.assert:
+        that:
+          - netbird_version is not defined or netbird_version == ''
+        fail_msg: "netbird_version is not applicable when netbird_install_method is '{{ netbird_install_method }}'. It must be undefined or empty."
+      when: netbird_install_method != 'binary'
+
+    - name: Assertions for binary install method (present)
+      ansible.builtin.assert:
+        that:
+          - netbird_version is defined
+          - netbird_version != ''
+        fail_msg: "netbird_version must be defined and non-empty when netbird_install_method is 'binary' and netbird_state is 'present'."
+      when:
+        - netbird_install_method == 'binary'
+        - netbird_state == 'present'
+
     - name: Include OS-specific installation tasks
       ansible.builtin.include_tasks: "install-{{ netbird_install_method }}.yml"
 
