@@ -54,16 +54,12 @@
   when: netbird_install_method == 'rpm'
   become: true
 
-- name: Remove Netbird package (Arch)
+- name: Remove Netbird packages (Arch)
   community.general.pacman:
-    name: netbird
+    name:
+      - netbird-bin
+      - netbird-bin-debug
     state: absent
-  when: netbird_install_method == 'pacman'
-  become: true
-
-- name: Reload systemd (Arch)
-  ansible.builtin.systemd:
-    daemon_reload: true
   when: netbird_install_method == 'pacman'
   become: true
 
