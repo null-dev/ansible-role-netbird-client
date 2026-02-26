@@ -36,13 +36,15 @@
   become: false
   environment:
     GIT_SSL_NO_VERIFY: "true"
+  register: aur_git_clone
 
 - name: Build Netbird package
   ansible.builtin.command:
-    cmd: makepkg -f --noconfirm
+    cmd: makepkg -f --clean --noconfirm
     chdir: "{{ netbird_build_dir }}/netbird-bin"
   become: false
   changed_when: true
+  when: aur_git_clone.changed
 
 - name: Find built packages
   ansible.builtin.find:
