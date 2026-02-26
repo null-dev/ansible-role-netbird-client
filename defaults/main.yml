@@ -24,4 +24,8 @@ netbird_install_method: >-
 netbird_binary_install_dir: "/usr/bin"
 
 # Service name
-netbird_service_name: "netbird"
+netbird_service_name: >-
+  {{
+    'netbird@main' if ansible_facts['os_family'] == 'Archlinux' else
+    'netbird'
+  }}
