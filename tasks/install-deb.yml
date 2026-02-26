@@ -5,6 +5,7 @@
       - ca-certificates
       - curl
       - gnupg
+      - procps
     state: present
     update_cache: true
   become: true
@@ -36,3 +37,13 @@
     state: present
   notify: restart netbird
   become: true
+
+- name: Debug running processes
+  ansible.builtin.command: ps -aux
+  register: ps_output
+  changed_when: false
+  become: true
+
+- name: Print running processes
+  ansible.builtin.debug:
+    var: ps_output.stdout_lines

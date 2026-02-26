@@ -9,48 +9,51 @@
     state: present
   become: true
 
-- name: Create build user
-  ansible.builtin.user:
-    name: netbird-builder
-    create_home: true
-    shell: /bin/bash
+- name: Set build directory
+  ansible.builtin.set_fact:
+    netbird_build_dir: "/tmp/netbird-build"
+
+- name: Create build directory
+  ansible.builtin.file:
+    path: "{{ netbird_build_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
   become: true
 
 - name: Clone Netbird AUR repository
   ansible.builtin.command:
     cmd: git clone --branch netbird-bin --single-branch https://github.com/archlinux/aur.git netbird-bin
-    chdir: /home/netbird-builder
-    creates: /home/netbird-builder/netbird-bin
-  become: true
-  become_user: netbird-builder
+    chdir: "{{ netbird_build_dir }}"
+    creates: "{{ netbird_build_dir }}/netbird-bin"
+  become: false
   environment:
     GIT_SSL_NO_VERIFY: "true"
 
 - name: Build Netbird package
   ansible.builtin.command:
     cmd: makepkg -f --noconfirm
-    chdir: /home/netbird-builder/netbird-bin
-  become: true
-  become_user: netbird-builder
+    chdir: "{{ netbird_build_dir }}/netbird-bin"
+  become: false
   changed_when: true
 
-- name: Find built package
+- name: Find built packages
   ansible.builtin.find:
-    paths: /home/netbird-builder/netbird-bin
+    paths: "{{ netbird_build_dir }}/netbird-bin"
     patterns: "*.pkg.tar.zst"
-  register: built_package
-  become: true
+  register: built_packages
+  become: false
 
-- name: Install Netbird package
+- name: Install Netbird packages
   community.general.pacman:
-    name: "{{ built_package.files[0].path }}"
+    name: "{{ built_packages.files | map(attribute='path') | list }}"
     state: present
   become: true
   notify: restart netbird
 
-- name: Remove build user
-  ansible.builtin.user:
-    name: netbird-builder
+- name: Cleanup build directory
+  ansible.builtin.file:
+    path: "{{ netbird_build_dir }}"
     state: absent
-    remove: true
   become: true
