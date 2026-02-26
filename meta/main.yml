@@ -32,6 +32,6 @@ galaxy_info:
 dependencies: []
 
 # Note: Any changes to collections here must also be reflected in requirements.yml
+# Note: Version constraints are not supported in meta/main.yml for collections
 collections:
-  - name: community.general
-    version: '>=12.4.0'
+  - community.general
