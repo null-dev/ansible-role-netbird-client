@@ -15,15 +15,15 @@
 
 - name: Set build directory
   ansible.builtin.set_fact:
-    netbird_build_dir: "{{ ansible_env.HOME }}/ansible-persist/netbird-client/build"
+    netbird_build_dir: "{{ ansible_facts['env']['HOME'] }}/ansible-persist/netbird-client/build"
 
 - name: Create build directory
   ansible.builtin.file:
     path: "{{ netbird_build_dir }}"
     state: directory
     mode: '0755'
-    owner: "{{ ansible_user_id }}"
-    group: "{{ ansible_user_id }}"
+    owner: "{{ ansible_facts['user_id'] }}"
+    group: "{{ ansible_facts['user_id'] }}"
   become: true
 
 - name: Clone Netbird AUR repository
