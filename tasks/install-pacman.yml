@@ -6,13 +6,6 @@
       - ca-certificates
       - git
       - go
-      - libglvnd
-      - libx11
-      - libxcursor
-      - libxi
-      - libxinerama
-      - libxrandr
-      - libxxf86vm
     state: present
   become: true
 
@@ -24,10 +17,10 @@
   become: true
 
 - name: Clone Netbird AUR repository
-  ansible.builtin.git:
-    repo: https://aur.archlinux.org/netbird.git
-    dest: /home/netbird-builder/netbird
-    update: true
+  ansible.builtin.command:
+    cmd: git clone --branch netbird-bin --single-branch https://github.com/archlinux/aur.git netbird-bin
+    chdir: /home/netbird-builder
+    creates: /home/netbird-builder/netbird-bin
   become: true
   become_user: netbird-builder
   environment:
@@ -36,14 +29,14 @@
 - name: Build Netbird package
   ansible.builtin.command:
     cmd: makepkg -f --noconfirm
-    chdir: /home/netbird-builder/netbird
+    chdir: /home/netbird-builder/netbird-bin
   become: true
   become_user: netbird-builder
   changed_when: true
 
 - name: Find built package
   ansible.builtin.find:
-    paths: /home/netbird-builder/netbird
+    paths: /home/netbird-builder/netbird-bin
     patterns: "*.pkg.tar.zst"
   register: built_package
   become: true

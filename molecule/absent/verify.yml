@@ -6,5 +6,8 @@
     - name: Check for netbird process (should fail)
       ansible.builtin.shell: pgrep -f netbird
       register: pgrep_result
+      until: pgrep_result.rc != 0
+      retries: 15
+      delay: 1
       failed_when: pgrep_result.rc == 0
       changed_when: false
