@@ -39,6 +39,7 @@
   environment:
     GIT_SSL_NO_VERIFY: "true"
   register: aur_git_clone
+  when: netbird_state == 'latest' or pacman_check.rc != 0
 
 - name: Check installed version vs source version
   block:
