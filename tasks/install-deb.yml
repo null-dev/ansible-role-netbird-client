@@ -18,6 +18,7 @@
     components: main
     signed_by: https://pkgs.netbird.io/debian/public.key
     state: present
+    install_python_debian: true
   become: true
 
 - name: Install Netbird
