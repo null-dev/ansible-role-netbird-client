@@ -30,3 +30,7 @@ galaxy_info:
     - security
 
 dependencies: []
+
+# Note: Any changes to collections here must also be reflected in requirements.yml
+collections:
+  - community.general
