@@ -1,16 +1,41 @@
 ---
+- name: Check if Netbird binary exists
+  ansible.builtin.stat:
+    path: "{{ netbird_binary_install_dir }}/netbird"
+  register: netbird_binary_stat
+  become: true
+
+- name: Check installed Netbird version
+  ansible.builtin.command: "{{ netbird_binary_install_dir }}/netbird version"
+  register: netbird_installed_version_output
+  changed_when: false
+  ignore_errors: true
+  when: netbird_binary_stat.stat.exists
+  become: true
+
+- name: Determine if Netbird needs update
+  ansible.builtin.set_fact:
+    netbird_needs_update: >-
+      {{
+        not netbird_binary_stat.stat.exists or
+        (netbird_installed_version_output.stdout | default('') != netbird_version)
+      }}
+
 - name: Create temporary download directory
   ansible.builtin.file:
     path: /tmp/netbird-install
     state: directory
     mode: '0755'
+  when: netbird_needs_update
+  become: true
 
 - name: Download and unarchive Netbird
   ansible.builtin.unarchive:
     src: "https://github.com/netbirdio/netbird/releases/download/v{{ netbird_version }}/netbird_{{ netbird_version }}_linux_{{ netbird_arch }}.tar.gz"
     dest: /tmp/netbird-install
     remote_src: true
-    creates: /tmp/netbird-install/netbird
+  when: netbird_needs_update
+  become: true
 
 - name: Install Netbird binary
   ansible.builtin.copy:
@@ -21,12 +46,14 @@
     group: root
     remote_src: true
   notify: restart netbird
+  when: netbird_needs_update
   become: true
 
 - name: Install Netbird service
   ansible.builtin.command:
     cmd: "{{ netbird_binary_install_dir }}/netbird service install"
     creates: /etc/systemd/system/netbird.service
+  when: netbird_needs_update
   become: true
 
 - name: Start Netbird service
@@ -40,3 +67,5 @@
   ansible.builtin.file:
     path: /tmp/netbird-install
     state: absent
+  when: netbird_needs_update
+  become: true
