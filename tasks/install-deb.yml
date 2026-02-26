@@ -25,6 +25,6 @@
   ansible.builtin.apt:
     name: netbird
     state: "{{ netbird_state }}"
-    update_cache: "{{ 'yes' if netbird_state == 'latest' else 'no' }}"
+    update_cache: "{{ netbird_state == 'latest' }}"
   notify: restart netbird
   become: true

@@ -30,9 +30,9 @@
 
 - name: Clone Netbird AUR repository
   ansible.builtin.git:
-    repo: https://aur.archlinux.org/netbird-bin.git
+    repo: https://github.com/archlinux/aur.git
     dest: "{{ netbird_build_dir }}/netbird-bin"
-    version: master
+    version: netbird-bin
     single_branch: true
     update: true
   become: false
