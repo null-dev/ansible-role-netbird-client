@@ -4,6 +4,7 @@
   tasks:
     - name: Include netbird role (present)
       ansible.builtin.include_role:
+        # See: https://github.com/ansible/molecule/issues/1567#issuecomment-436876722
         name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
       vars:
         netbird_state: present

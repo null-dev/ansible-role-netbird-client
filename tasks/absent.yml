@@ -12,13 +12,6 @@
   ignore_errors: true
   become: true
 
-- name: Kill Netbird process
-  ansible.builtin.command: pkill netbird
-  register: pkill_result
-  changed_when: pkill_result.rc == 0
-  failed_when: pkill_result.rc != 0 and pkill_result.rc != 1
-  become: true
-
 - name: Remove Netbird package (Debian)
   ansible.builtin.apt:
     name: netbird
@@ -36,6 +29,13 @@
 - name: Remove Netbird GPG key (Debian)
   ansible.builtin.file:
     path: /usr/share/keyrings/netbird-archive-keyring.gpg
+    state: absent
+  when: netbird_install_method == 'deb'
+  become: true
+
+- name: Remove Netbird ASC key (Debian)
+  ansible.builtin.file:
+    path: /usr/share/keyrings/netbird-archive-keyring.asc
     state: absent
   when: netbird_install_method == 'deb'
   become: true
@@ -70,7 +70,7 @@
 
 - name: Remove Netbird service file (Binary)
   ansible.builtin.file:
-    path: /etc/systemd/system/netbird.service
+    path: /etc/systemd/system/{{ netbird_service_name }}.service
     state: absent
   when: netbird_install_method == 'binary'
   become: true
@@ -80,11 +80,4 @@
     path: "{{ netbird_binary_install_dir }}/netbird"
     state: absent
   when: netbird_install_method == 'binary'
-  become: true
-
-- name: Final kill of Netbird process
-  ansible.builtin.command: pkill netbird
-  register: pkill_final_result
-  changed_when: pkill_final_result.rc == 0
-  failed_when: pkill_final_result.rc != 0 and pkill_final_result.rc != 1
   become: true

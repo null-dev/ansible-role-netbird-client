@@ -14,7 +14,7 @@
   ansible.builtin.get_url:
     url: https://pkgs.netbird.io/debian/public.key
     dest: /usr/share/keyrings/netbird-archive-keyring.asc
-    mode: '0644'
+    mode: "0644"
   become: true
 
 - name: Dearmor Netbird GPG key
@@ -37,13 +37,3 @@
     state: present
   notify: restart netbird
   become: true
-
-- name: Debug running processes
-  ansible.builtin.command: ps -aux
-  register: ps_output
-  changed_when: false
-  become: true
-
-- name: Print running processes
-  ansible.builtin.debug:
-    var: ps_output.stdout_lines

@@ -25,7 +25,7 @@
   ansible.builtin.file:
     path: /tmp/netbird-install
     state: directory
-    mode: '0755'
+    mode: "0755"
   when: netbird_needs_update
   become: true
 
@@ -41,7 +41,7 @@
   ansible.builtin.copy:
     src: /tmp/netbird-install/netbird
     dest: "{{ netbird_binary_install_dir }}/netbird"
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
     remote_src: true
@@ -52,15 +52,8 @@
 - name: Install Netbird service
   ansible.builtin.command:
     cmd: "{{ netbird_binary_install_dir }}/netbird service install"
-    creates: /etc/systemd/system/netbird.service
+    creates: "/etc/systemd/system/{{ netbird_service_name }}.service"
   when: netbird_needs_update
-  become: true
-
-- name: Start Netbird service
-  ansible.builtin.service:
-    name: netbird
-    state: started
-    enabled: true
   become: true
 
 - name: Cleanup temporary directory

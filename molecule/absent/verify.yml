@@ -3,6 +3,21 @@
   hosts: all
   gather_facts: false
   tasks:
-    - name: No-op verification
-      ansible.builtin.debug:
-        msg: "Process check disabled as per request."
+    - name: Check if binary exists
+      ansible.builtin.command: which netbird
+      register: binary_check
+      ignore_errors: true
+      changed_when: false
+      failed_when: binary_check.rc == 0
+
+    - name: Check if service is loaded (netbird.service)
+      ansible.builtin.systemd:
+        name: netbird
+      register: service_status
+      failed_when: service_status.status.LoadState != 'not-found'
+
+    - name: Check if service is loaded (netbird@.service)
+      ansible.builtin.systemd:
+        name: netbird@
+      register: service_status
+      failed_when: service_status.status.LoadState != 'not-found'
