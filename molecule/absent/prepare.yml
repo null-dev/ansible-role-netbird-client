@@ -8,3 +8,4 @@
         name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
       vars:
         netbird_state: present
+        netbird_version: "{{ '0.30.5' if netbird_install_method | default('deb') == 'binary' else omit }}"

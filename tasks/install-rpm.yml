@@ -8,12 +8,13 @@
     gpgcheck: false
     repo_gpgcheck: true
     gpgkey: https://pkgs.netbird.io/yum/repodata/repomd.xml.key
+  register: netbird_repo_rpm
   become: true
 
 - name: Install Netbird
   ansible.builtin.yum:
     name: netbird
     state: "{{ netbird_state }}"
-    update_cache: "{{ netbird_state == 'latest' }}"
+    update_cache: "{{ netbird_state == 'latest' or netbird_repo_rpm.changed }}"
   notify: restart netbird
   become: true
