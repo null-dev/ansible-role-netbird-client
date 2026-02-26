@@ -21,14 +21,10 @@
     install_python_debian: true
   become: true
 
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-  become: true
-
 - name: Install Netbird
   ansible.builtin.apt:
     name: netbird
-    state: present
+    state: "{{ netbird_state }}"
+    update_cache: "{{ 'yes' if netbird_state == 'latest' else 'no' }}"
   notify: restart netbird
   become: true
