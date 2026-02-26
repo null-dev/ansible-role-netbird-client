@@ -16,8 +16,8 @@
       register: service_status
       failed_when: service_status.status.LoadState != 'not-found'
 
-    - name: Check if service is loaded (netbird@.service)
+    - name: Check if service is loaded (netbird@main.service)
       ansible.builtin.systemd:
-        name: netbird@
+        name: netbird@main
       register: service_status
       failed_when: service_status.status.LoadState != 'not-found'
