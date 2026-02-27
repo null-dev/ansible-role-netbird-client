@@ -2,9 +2,8 @@
 - name: Verify
   hosts: all
   gather_facts: false
+  become: true
   tasks:
-    - name: Check for netbird process
-      ansible.builtin.shell: pgrep -f netbird
-      register: pgrep_result
+    - name: Check for netbird service running
+      ansible.builtin.command: systemctl is-active netbird
       changed_when: false
-      failed_when: pgrep_result.rc != 0
