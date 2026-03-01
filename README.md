@@ -16,10 +16,11 @@ The version of Netbird to install (e.g., `"0.66.0"`). This is *only* applicable 
 
 ### `netbird_state`
 
-Controls whether the Netbird client is installed or uninstalled.
 Default: `"latest"`
-
-**Note:** When set to `absent`, the Netbird client is uninstalled.
+Supported values:
+- `"present"`: Installs the netbird client if it is not installed already
+- `"latest"`: Installs the netbird client or updates the client if it is out of date
+- `"absent"`: Uninstalls the netbird client
 
 ### `netbird_install_method`
 
@@ -31,7 +32,8 @@ The installation method is automatically detected based on the distribution.
 
 ### `netbird_binary_install_dir`
 
-The directory where the Netbird binary is installed for binary installations (Arch/Other).
+The directory where the Netbird binary is installed for binary installations. Only used when `netbird_install_method == "binary"`.
+
 Default: `"/usr/bin"`
 
 ### `netbird_arch`
@@ -41,7 +43,8 @@ The architecture of the system. Automatically detected.
 ### `netbird_service_name`
 
 The name of the systemd service.
-Default: `"netbird"`
+
+Default: `"netbird"` except on Arch where it is: `"netbird@main"`.
 
 ## Dependencies
 
